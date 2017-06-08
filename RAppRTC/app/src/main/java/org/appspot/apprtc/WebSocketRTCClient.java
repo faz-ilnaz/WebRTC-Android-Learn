@@ -10,7 +10,6 @@
 
 package org.appspot.apprtc;
 
-import org.appspot.apprtc.RoomParametersFetcher.RoomParametersFetcherEvents;
 import org.appspot.apprtc.WebSocketChannelClient.WebSocketChannelEvents;
 import org.appspot.apprtc.WebSocketChannelClient.WebSocketConnectionState;
 import org.appspot.apprtc.util.AsyncHttpURLConnection;
@@ -20,6 +19,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
 
+import org.appspot.apprtc.util.LooperExecutor;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -55,12 +55,16 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
   private String messageUrl;
   private String leaveUrl;
 
+  private final LooperExecutor executor;
+
   public WebSocketRTCClient(SignalingEvents events) {
     this.events = events;
     roomState = ConnectionState.NEW;
     final HandlerThread handlerThread = new HandlerThread(TAG);
     handlerThread.start();
     handler = new Handler(handlerThread.getLooper());
+    executor = new LooperExecutor();
+    executor.requestStart();
   }
 
   // --------------------------------------------------------------------
@@ -70,10 +74,14 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
   @Override
   public void connectToRoom(RoomConnectionParameters connectionParameters) {
     this.connectionParameters = connectionParameters;
-    handler.post(new Runnable() {
+    executor.execute(new Runnable() {
       @Override
       public void run() {
-        connectToRoomInternal();
+        try {
+          connectToRoomInternal();
+        } catch (Exception e) {
+          reportError("WebSocketerror: " + e.toString());
+        }
       }
     });
   }
@@ -94,26 +102,11 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
     String connectionUrl = getConnectionUrl(connectionParameters);
     Log.d(TAG, "Connect to room: " + connectionUrl);
     roomState = ConnectionState.NEW;
-    wsClient = new WebSocketChannelClient(handler, this);
+    wsClient = new WebSocketChannelClient(executor, this);
 
-    RoomParametersFetcherEvents callbacks = new RoomParametersFetcherEvents() {
-      @Override
-      public void onSignalingParametersReady(final SignalingParameters params) {
-        WebSocketRTCClient.this.handler.post(new Runnable() {
-          @Override
-          public void run() {
-            WebSocketRTCClient.this.signalingParametersReady(params);
-          }
-        });
-      }
-
-      @Override
-      public void onSignalingParametersError(String description) {
-        WebSocketRTCClient.this.reportError(description);
-      }
-    };
-
-    new RoomParametersFetcher(connectionUrl, null, callbacks).makeRequest();
+    wsClient.connect(connectionUrl);
+    wsClient.setState(WebSocketConnectionState.CONNECTED);
+    Log.d(TAG, "wsClient connect " + connectionUrl);
   }
 
   // Disconnect from room and send bye messages - runs on a local looper thread.
@@ -131,7 +124,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
 
   // Helper functions to get connection, post message and leave message URLs
   private String getConnectionUrl(RoomConnectionParameters connectionParameters) {
-    return connectionParameters.roomUrl + "/" + ROOM_JOIN + "/" + connectionParameters.roomId;
+    return connectionParameters.roomUrl + "/wssignaling";
   }
 
   private String getMessageUrl(
@@ -144,34 +137,6 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
       RoomConnectionParameters connectionParameters, SignalingParameters signalingParameters) {
     return connectionParameters.roomUrl + "/" + ROOM_LEAVE + "/" + connectionParameters.roomId + "/"
         + signalingParameters.clientId;
-  }
-
-  // Callback issued when room parameters are extracted. Runs on local
-  // looper thread.
-  private void signalingParametersReady(final SignalingParameters signalingParameters) {
-    Log.d(TAG, "Room connection completed.");
-    if (connectionParameters.loopback
-        && (!signalingParameters.initiator || signalingParameters.offerSdp != null)) {
-      reportError("Loopback room is busy.");
-      return;
-    }
-    if (!connectionParameters.loopback && !signalingParameters.initiator
-        && signalingParameters.offerSdp == null) {
-      Log.w(TAG, "No offer SDP in room response.");
-    }
-    initiator = signalingParameters.initiator;
-    messageUrl = getMessageUrl(connectionParameters, signalingParameters);
-    leaveUrl = getLeaveUrl(connectionParameters, signalingParameters);
-    Log.d(TAG, "Message URL: " + messageUrl);
-    Log.d(TAG, "Leave URL: " + leaveUrl);
-    roomState = ConnectionState.CONNECTED;
-
-    // Fire connection and signaling parameters events.
-    events.onConnectedToRoom(signalingParameters);
-
-    // Connect and register WebSocket client.
-    wsClient.connect(signalingParameters.wssUrl, signalingParameters.wssPostUrl);
-    wsClient.register(connectionParameters.roomId, signalingParameters.clientId);
   }
 
   // Send local offer SDP to the other participant.
@@ -361,7 +326,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
   }
 
   // Put a |key|->|value| mapping in |json|.
-  private static void jsonPut(JSONObject json, String key, Object value) {
+  public static void jsonPut(JSONObject json, String key, Object value) {
     try {
       json.put(key, value);
     } catch (JSONException e) {

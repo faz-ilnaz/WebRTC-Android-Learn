@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 24
-    buildToolsVersion '24.0.3'
+    buildToolsVersion '25.0.0'
 
     sourceSets.main {
         jniLibs.srcDir 'libs'
@@ -31,10 +31,9 @@ android {
 }
 
 dependencies {
+    compile 'com.neovisionaries:nv-websocket-client:2.2'
     compile fileTree(include: ['*.jar'], dir: 'libs')
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:24.1.1'
     compile files('libs/libjingle_peerconnection_java.jar')
-    compile files('libs/base_java.jar')
-    compile files('libs/autobanh.jar')
 }
