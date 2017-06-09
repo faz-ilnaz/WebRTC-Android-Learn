@@ -79,10 +79,10 @@ public class WebSocketChannelClient {
         void onWebSocketError(final String description);
     }
 
-    public WebSocketChannelClient(LooperExecutor executor, WebSocketChannelEvents events) {
+    public WebSocketChannelClient(LooperExecutor executor, WebSocketChannelEvents events, String roomID) {
         this.executor = executor;
         this.events = events;
-        roomID = null;
+        this.roomID = roomID;
         clientID = null;
         wsSendQueue = new LinkedList<String>();
         state = WebSocketConnectionState.NEW;
@@ -267,8 +267,10 @@ public class WebSocketChannelClient {
                     RTCConnection.online = true;
                     // Check if we have pending register request.
                     if (state != WebSocketConnectionState.REGISTERED) {
-                        RoomParametersFetcher roomParametersFetcher = new RoomParametersFetcher(ws);
-                        roomParametersFetcher.makeRequest();
+//                        if (roomID != null && clientID != null) {
+                        if (roomID != null) {
+                            register(roomID, clientID);
+                        }
                     }
                 }
             });
@@ -338,7 +340,7 @@ public class WebSocketChannelClient {
             WebSocketFactory factory = new WebSocketFactory();
             // Set the custom SSL context.
             if (trustAll) {
-                factory.setSSLContext(NaiveSSLContext.getInstance("TLS"));
+                factory.setSSLContext(NaiveSSLContext.getInstance("SSL"));
             } else
                 factory.setSSLContext(sslContext);
 
