@@ -268,9 +268,9 @@ public class WebSocketChannelClient {
                     // Check if we have pending register request.
                     if (state != WebSocketConnectionState.REGISTERED) {
 //                        if (roomID != null && clientID != null) {
-                        if (roomID != null) {
-                            register(roomID, clientID);
-                        }
+//                        if (roomID != null) {
+//                            register(roomID, clientID);
+//                        }
                     }
                 }
             });
