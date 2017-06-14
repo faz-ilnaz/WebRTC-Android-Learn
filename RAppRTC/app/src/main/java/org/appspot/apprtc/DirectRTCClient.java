@@ -148,7 +148,7 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
   }
 
   @Override
-  public void sendOfferSdp(final SessionDescription sdp) {
+  public void sendOfferSdp(final SessionDescription sdp, final String tmp) {
     executor.execute(new Runnable() {
       @Override
       public void run() {

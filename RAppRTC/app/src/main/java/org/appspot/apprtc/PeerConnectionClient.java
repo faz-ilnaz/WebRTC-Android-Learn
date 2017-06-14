@@ -130,6 +130,9 @@ public class PeerConnectionClient {
   private DataChannel dataChannel;
   private boolean dataChannelEnabled;
 
+  public static String to;
+  public static String clientID;
+
   /**
    * Peer connection parameters.
    */
@@ -688,13 +691,14 @@ public class PeerConnectionClient {
     });
   }
 
-  public void createOffer() {
+  public void createOffer(final String to) {
     executor.execute(new Runnable() {
       @Override
       public void run() {
         if (peerConnection != null && !isError) {
-          Log.d(TAG, "PC Create OFFER");
+          Log.d(TAG, "PC Create OFFER to " + to);
           isInitiator = true;
+          PeerConnectionClient.this.to = to;
           peerConnection.createOffer(sdpObserver, sdpMediaConstraints);
         }
       }

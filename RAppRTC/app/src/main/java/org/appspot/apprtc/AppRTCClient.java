@@ -44,7 +44,7 @@ public interface AppRTCClient {
   /**
    * Send offer SDP to the other participant.
    */
-  void sendOfferSdp(final SessionDescription sdp);
+  void sendOfferSdp(final SessionDescription sdp, final String to);
 
   /**
    * Send answer SDP to the other participant.
@@ -102,6 +102,8 @@ public interface AppRTCClient {
      * SignalingParameters are extracted.
      */
     void onConnectedToRoom(final SignalingParameters params);
+
+    void onOfferRequest(final String from);
 
     /**
      * Callback fired once remote SDP is received.

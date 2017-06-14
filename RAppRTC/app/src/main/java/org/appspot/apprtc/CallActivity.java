@@ -725,7 +725,21 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
     });
   }
 
-  @Override
+    @Override
+    public void onOfferRequest(final String to) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                logAndToast("Creating offerResponse to " + to);
+                // Create answer. Answer SDP will be sent to offering client in
+                // PeerConnectionEvents.onLocalDescription event.
+                peerConnectionClient.createOffer(to);
+            }
+        });
+
+    }
+
+    @Override
   public void onRemoteDescription(final SessionDescription sdp) {
     final long delta = System.currentTimeMillis() - callStartedTimeMs;
     runOnUiThread(new Runnable() {
@@ -804,7 +818,7 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
         if (appRtcClient != null) {
           logAndToast("Sending " + sdp.type + ", delay=" + delta + "ms");
           if (signalingParameters.initiator) {
-            appRtcClient.sendOfferSdp(sdp);
+            appRtcClient.sendOfferSdp(sdp, PeerConnectionClient.to);
           } else {
             appRtcClient.sendAnswerSdp(sdp);
           }
