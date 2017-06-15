@@ -90,6 +90,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
 
     @Override
     public void disconnectFromRoom() {
+        //events.onDisconnectedFromRoom();
         executor.execute(new Runnable() {
             @Override
             public void run() {
@@ -122,14 +123,17 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
 
         // Fire connection and signaling parameters events.
         events.onConnectedToRoom(signalingParameters);
+        //Set room state to CONNECTED after triggereing event
+        roomState = ConnectionState.CONNECTED;
     }
 
     // Disconnect from room and send bye messages - runs on a local looper thread.
     private void disconnectFromRoomInternal() {
         Log.d(TAG, "Disconnect. Room state: " + roomState);
+
         if (roomState == ConnectionState.CONNECTED) {
             Log.d(TAG, "Closing room.");
-            sendPostMessage(MessageType.LEAVE, leaveUrl, null);
+            wsClient.send("{\"signal\":\"left\"}");
         }
         roomState = ConnectionState.CLOSED;
         if (wsClient != null) {
@@ -157,26 +161,26 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
     // Send local offer SDP to the other participant.
     @Override
     public void sendOfferSdp(final SessionDescription sdp, final String to) {
-      executor.execute(new Runnable() {
-        @Override
-        public void run() {
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
 
-          JSONObject json = new JSONObject();
-          jsonPut(json, "to", to);
-          jsonPut(json, "from", "");
-          jsonPut(json, "signal", "offerResponse");
-          jsonPut(json, "content", sdp.description);
+                JSONObject json = new JSONObject();
+                jsonPut(json, "to", to);
+                jsonPut(json, "from", "");
+                jsonPut(json, "signal", "offerResponse");
+                jsonPut(json, "content", sdp.description);
 
-          wsClient.send(json.toString());
+                wsClient.send(json.toString());
 
-          if (connectionParameters.loopback) {
-            // In loopback mode rename this offer to answer and route it back.
-            SessionDescription sdpAnswer = new SessionDescription(
-                    SessionDescription.Type.fromCanonicalForm("answer"), sdp.description);
-            events.onRemoteDescription(sdpAnswer);
-          }
-        }
-      });
+                if (connectionParameters.loopback) {
+                    // In loopback mode rename this offer to answer and route it back.
+                    SessionDescription sdpAnswer = new SessionDescription(
+                            SessionDescription.Type.fromCanonicalForm("answer"), sdp.description);
+                    events.onRemoteDescription(sdpAnswer);
+                }
+            }
+        });
     }
 
     // Send local answer SDP to the other participant.
@@ -324,9 +328,6 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
                         }
                         break;
                     case "left":
-                        Log.i(TAG, "Peer left");
-                        break;
-                    case "bye":
                         events.onChannelClose();
                         break;
                     default:
