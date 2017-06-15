@@ -146,17 +146,6 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
         return connectionParameters.roomUrl + "/signaling";
     }
 
-    private String getMessageUrl(
-            RoomConnectionParameters connectionParameters, SignalingParameters signalingParameters) {
-        return connectionParameters.roomUrl + "/" + ROOM_MESSAGE + "/" + connectionParameters.roomId
-                + "/" + signalingParameters.clientId;
-    }
-
-    private String getLeaveUrl(
-            RoomConnectionParameters connectionParameters, SignalingParameters signalingParameters) {
-        return connectionParameters.roomUrl + "/" + ROOM_LEAVE + "/" + connectionParameters.roomId + "/"
-                + signalingParameters.clientId;
-    }
 
     // Send local offer SDP to the other participant.
     @Override
@@ -164,21 +153,14 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
         executor.execute(new Runnable() {
             @Override
             public void run() {
-
+                Log.d(TAG, "offerResponse sent to " + to);
                 JSONObject json = new JSONObject();
                 jsonPut(json, "to", to);
                 jsonPut(json, "from", "");
                 jsonPut(json, "signal", "offerResponse");
                 jsonPut(json, "content", sdp.description);
-
+                Log.d(TAG, "offerResponse: " + json.toString());
                 wsClient.send(json.toString());
-
-                if (connectionParameters.loopback) {
-                    // In loopback mode rename this offer to answer and route it back.
-                    SessionDescription sdpAnswer = new SessionDescription(
-                            SessionDescription.Type.fromCanonicalForm("answer"), sdp.description);
-                    events.onRemoteDescription(sdpAnswer);
-                }
             }
         });
     }
@@ -189,10 +171,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
         executor.execute(new Runnable() {
             @Override
             public void run() {
-                if (connectionParameters.loopback) {
-                    Log.e(TAG, "Sending answer in loopback mode.");
-                    return;
-                }
+                Log.d(TAG, "answerResponse sent to " + PeerConnectionClient.to);
                 JSONObject json = new JSONObject();
                 jsonPut(json, "signal", "answerResponse");
                 jsonPut(json, "to", PeerConnectionClient.to);

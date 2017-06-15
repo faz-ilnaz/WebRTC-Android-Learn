@@ -50,12 +50,12 @@ public class WebSocketChannelClient {
     private final LooperExecutor executor;
     private WebSocket ws;
     private String wsServerUrl;
-    private String postServerUrl;
     private String roomID;
     private String clientID;
     private WebSocketConnectionState state;
     private final Object closeEventLock = new Object();
     private boolean closeEvent;
+
     // WebSocket send queue. Messages are added to the queue when WebSocket
     // client is not registered and are consumed in register() call.
     private final LinkedList<String> wsSendQueue;

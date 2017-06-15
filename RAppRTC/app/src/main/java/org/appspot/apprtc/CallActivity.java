@@ -759,8 +759,9 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
                 }
                 logAndToast("Received remote " + sdp.type + ", delay=" + delta + "ms");
                 peerConnectionClient.setRemoteDescription(sdp);
-                if (!WebSocketRTCClient.initiator) {
-                    logAndToast("Creating ANSWER...");
+                //Responding with ANSWER to coach if recieved his OFFER
+                if (sdp.type == SessionDescription.Type.OFFER) {
+                    logAndToast("Creating ANSWER SDP");
                     // Create answer. Answer SDP will be sent to offering client in
                     // PeerConnectionEvents.onLocalDescription event.
                     peerConnectionClient.createAnswer();
@@ -825,7 +826,7 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
             public void run() {
                 if (appRtcClient != null) {
                     logAndToast("Sending " + sdp.type + ", delay=" + delta + "ms");
-                    if (WebSocketRTCClient.initiator) {
+                    if (sdp.type == SessionDescription.Type.OFFER) {
                         appRtcClient.sendOfferSdp(sdp, PeerConnectionClient.to);
                     } else {
                         appRtcClient.sendAnswerSdp(sdp);

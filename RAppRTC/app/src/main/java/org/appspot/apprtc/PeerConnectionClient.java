@@ -752,6 +752,9 @@ public class PeerConnectionClient {
     executor.execute(new Runnable() {
       @Override
       public void run() {
+
+        Log.d(TAG, "Setting remote SDP.");
+
         if (peerConnection == null || isError) {
           return;
         }
