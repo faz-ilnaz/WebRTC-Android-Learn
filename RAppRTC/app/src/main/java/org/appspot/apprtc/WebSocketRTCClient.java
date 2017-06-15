@@ -50,7 +50,7 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
 
     private enum MessageType {MESSAGE, LEAVE}
 
-    private boolean initiator;
+    public static boolean initiator;
     private SignalingEvents events;
     private WebSocketChannelClient wsClient;
     private ConnectionState roomState;
@@ -190,8 +190,10 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
                     return;
                 }
                 JSONObject json = new JSONObject();
-                jsonPut(json, "sdp", sdp.description);
-                jsonPut(json, "type", "answer");
+                jsonPut(json, "signal", "answerResponse");
+                jsonPut(json, "to", PeerConnectionClient.to);
+                jsonPut(json, "from", "");
+                jsonPut(json, "content", sdp.description);
                 wsClient.send(json.toString());
             }
         });
@@ -274,49 +276,62 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
                 return;
             }
 
+            SessionDescription sdp = null;
+
             if (signal.length() > 0) {
-                if (signal.equals("created") || (signal.equals("joined"))) {
-                    PeerConnectionClient.clientID = json.getString("to");
-                    this.wsClient.setState(WebSocketConnectionState.REGISTERED);
-                } else if (signal.equals("newJoined")) {
-                    Log.i(TAG, "New users has joined");
-                } else if (signal.equals("offerRequest")) {
-                    Log.i(TAG, "Offer request come from " + json.getString("from"));
-                    events.onOfferRequest(json.getString("from"));
-                } else if(signal.equals("finalize")) {
-                    Log.i(TAG, "Connection finalize btw: from " + json.getString("from") + ", to " + json.getString("to"));
-                    SessionDescription sdp = new SessionDescription(
-                            SessionDescription.Type.ANSWER, json.getString("content"));
-                    events.onRemoteDescription(sdp);
-                } else if (signal.equals("candidate")) {
-                    events.onRemoteIceCandidate(toJavaCandidate(new JSONObject(json.getString("content"))));
-                } else if (signal.equals("remove-candidates")) {
-                    JSONArray candidateArray = json.getJSONArray("candidates");
-                    IceCandidate[] candidates = new IceCandidate[candidateArray.length()];
-                    for (int i = 0; i < candidateArray.length(); ++i) {
-                        candidates[i] = toJavaCandidate(candidateArray.getJSONObject(i));
-                    }
-                    events.onRemoteIceCandidatesRemoved(candidates);
-                } else if (signal.equals("answerRequest")) {
-                    if (!initiator) {
-                        SessionDescription sdp = new SessionDescription(
+                switch (signal) {
+                    case "created":
+                        initiator = true;
+                        PeerConnectionClient.clientID = json.getString("to");
+                        this.wsClient.setState(WebSocketConnectionState.REGISTERED);
+                        break;
+                    case "joined":
+                        initiator = false;
+                        PeerConnectionClient.clientID = json.getString("to");
+                        this.wsClient.setState(WebSocketConnectionState.REGISTERED);
+                        break;
+                    case "newJoined":
+                        Log.i(TAG, "New users has joined");
+                        break;
+                    case "offerRequest":
+                        Log.i(TAG, "Offer request come from " + json.getString("from"));
+                        events.onOfferRequest(json.getString("from"));
+                        break;
+                    case "finalize":
+                        Log.i(TAG, "Connection finalize btw: from " + json.getString("from") + ", to " + json.getString("to"));
+                        sdp = new SessionDescription(
                                 SessionDescription.Type.ANSWER, json.getString("content"));
                         events.onRemoteDescription(sdp);
-                    } else {
-                        reportError("Received answer for call initiator: " + msg);
-                    }
-                } else if (signal.equals("offer")) {
-                    if (!initiator) {
-                        SessionDescription sdp = new SessionDescription(
-                                SessionDescription.Type.fromCanonicalForm(signal), json.getString("sdp"));
-                        events.onRemoteDescription(sdp);
-                    } else {
-                        reportError("Received offer for call receiver: " + msg);
-                    }
-                } else if (signal.equals("bye")) {
-                    events.onChannelClose();
-                } else {
-                    reportError("Unexpected WebSocket message: " + msg);
+                        break;
+                    case "candidate":
+                        events.onRemoteIceCandidate(toJavaCandidate(new JSONObject(json.getString("content"))));
+                        break;
+                    case "remove-candidates":
+                        JSONArray candidateArray = json.getJSONArray("candidates");
+                        IceCandidate[] candidates = new IceCandidate[candidateArray.length()];
+                        for (int i = 0; i < candidateArray.length(); ++i) {
+                            candidates[i] = toJavaCandidate(candidateArray.getJSONObject(i));
+                        }
+                        events.onRemoteIceCandidatesRemoved(candidates);
+                        break;
+                    case "answerRequest":
+                        if (!initiator) {
+                            sdp = new SessionDescription(
+                                    SessionDescription.Type.OFFER, json.getString("content"));
+                            events.onAnswerRequest(sdp, json.getString("from"));
+                        } else {
+                            reportError("Received answer for call initiator: " + msg);
+                        }
+                        break;
+                    case "left":
+                        Log.i(TAG, "Peer left");
+                        break;
+                    case "bye":
+                        events.onChannelClose();
+                        break;
+                    default:
+                        reportError("Unexpected WebSocket message: " + msg);
+                        break;
                 }
             } else {
                 reportError("Unexpected WebSocket message: " + msg);

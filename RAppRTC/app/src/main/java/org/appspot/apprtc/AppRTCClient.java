@@ -105,6 +105,8 @@ public interface AppRTCClient {
 
     void onOfferRequest(final String from);
 
+    void onAnswerRequest(final SessionDescription sdp, final String from);
+
     /**
      * Callback fired once remote SDP is received.
      */
