@@ -159,7 +159,6 @@ public class WebSocketRTCClient implements AppRTCClient, WebSocketChannelEvents 
                 jsonPut(json, "from", "");
                 jsonPut(json, "signal", "offerResponse");
                 jsonPut(json, "content", sdp.description);
-                Log.d(TAG, "offerResponse: " + json.toString());
                 wsClient.send(json.toString());
             }
         });

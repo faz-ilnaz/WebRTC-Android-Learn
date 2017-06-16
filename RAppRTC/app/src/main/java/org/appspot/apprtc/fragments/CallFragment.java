@@ -8,7 +8,7 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-package org.appspot.apprtc;
+package org.appspot.apprtc.fragments;
 
 import android.app.Activity;
 import android.app.Fragment;
@@ -20,6 +20,9 @@ import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import org.appspot.apprtc.CaptureQualityController;
+import org.appspot.apprtc.R;
+import org.appspot.apprtc.activities.CallActivity;
 import org.webrtc.RendererCommon.ScalingType;
 
 /**

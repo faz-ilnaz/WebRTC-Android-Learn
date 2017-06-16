@@ -8,7 +8,7 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-package org.appspot.apprtc;
+package org.appspot.apprtc.activities;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -35,10 +35,20 @@ import java.lang.RuntimeException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.appspot.apprtc.AppRTCAudioManager;
+import org.appspot.apprtc.AppRTCClient;
 import org.appspot.apprtc.AppRTCClient.RoomConnectionParameters;
 import org.appspot.apprtc.AppRTCClient.SignalingParameters;
+import org.appspot.apprtc.fragments.CallFragment;
+import org.appspot.apprtc.CpuMonitor;
+import org.appspot.apprtc.fragments.HudFragment;
+import org.appspot.apprtc.PeerConnectionClient;
 import org.appspot.apprtc.PeerConnectionClient.DataChannelParameters;
 import org.appspot.apprtc.PeerConnectionClient.PeerConnectionParameters;
+import org.appspot.apprtc.PercentFrameLayout;
+import org.appspot.apprtc.R;
+import org.appspot.apprtc.UnhandledExceptionHandler;
+import org.appspot.apprtc.WebSocketRTCClient;
 import org.webrtc.Camera1Enumerator;
 import org.webrtc.Camera2Enumerator;
 import org.webrtc.CameraEnumerator;
@@ -302,14 +312,10 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
 
         Log.d(TAG, "VIDEO_FILE: '" + intent.getStringExtra(EXTRA_VIDEO_FILE_AS_CAMERA) + "'");
 
-        // Create connection client. Use DirectRTCClient if room name is an IP otherwise use the
-        // standard WebSocketRTCClient.
-        if (loopback || !DirectRTCClient.IP_PATTERN.matcher(roomId).matches()) {
-            appRtcClient = new WebSocketRTCClient(this);
-        } else {
-            Log.i(TAG, "Using DirectRTCClient because room name looks like an IP.");
-            appRtcClient = new DirectRTCClient(this);
-        }
+        // Create connection client.
+        appRtcClient = new WebSocketRTCClient(this);
+
+
         // Create connection parameters.
         roomConnectionParameters = new RoomConnectionParameters(roomUri.toString(), roomId, loopback);
 

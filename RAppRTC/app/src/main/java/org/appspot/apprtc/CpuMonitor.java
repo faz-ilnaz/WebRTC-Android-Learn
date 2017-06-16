@@ -69,7 +69,7 @@ import java.util.concurrent.TimeUnit;
  *      jumping up and back down we might create faulty CPU load readings.
  */
 
-class CpuMonitor {
+public class CpuMonitor {
   private static final String TAG = "CpuMonitor";
   private static final int MOVING_AVERAGE_SAMPLES = 5;
 
