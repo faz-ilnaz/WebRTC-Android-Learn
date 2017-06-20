@@ -20,7 +20,9 @@ import java.util.List;
  * AppRTCClient is the interface representing an AppRTC client.
  */
 public interface AppRTCClient {
-  /**
+    void appendLocalIceCandidate(IceCandidate candidate);
+
+    /**
    * Struct holding the connection parameters of an AppRTC room.
    */
   class RoomConnectionParameters {

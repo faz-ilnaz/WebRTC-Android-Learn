@@ -700,27 +700,6 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
         }
         peerConnectionClient.createPeerConnection(rootEglBase.getEglBaseContext(), localRender,
                 remoteRenderers, videoCapturer, signalingParameters);
-
-//    if (signalingParameters.initiator) {
-//      logAndToast("Creating OFFER...");
-//      // Create offer. Offer SDP will be sent to answering client in
-//      // PeerConnectionEvents.onLocalDescription event.
-//      peerConnectionClient.createOffer();
-//    } else {
-//      if (params.offerSdp != null) {
-//        peerConnectionClient.setRemoteDescription(params.offerSdp);
-//        logAndToast("Creating ANSWER...");
-//        // Create answer. Answer SDP will be sent to offering client in
-//        // PeerConnectionEvents.onLocalDescription event.
-//        peerConnectionClient.createAnswer();
-//      }
-//      if (params.iceCandidates != null) {
-//        // Add remote ICE candidates from room.
-//        for (IceCandidate iceCandidate : params.iceCandidates) {
-//          peerConnectionClient.addRemoteIceCandidate(iceCandidate);
-//        }
-//      }
-//    }
     }
 
     @Override
@@ -845,14 +824,15 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
             }
         });
     }
-
+    //Then candidate is generated fire it
     @Override
     public void onIceCandidate(final IceCandidate candidate) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (appRtcClient != null) {
-                    appRtcClient.sendLocalIceCandidate(candidate);
+                    //Apend candidate to list and send them when it is needed
+                    appRtcClient.appendLocalIceCandidate(candidate);
                 }
             }
         });

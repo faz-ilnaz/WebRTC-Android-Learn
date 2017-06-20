@@ -10,10 +10,6 @@
 
 package org.appspot.apprtc;
 
-import org.appspot.apprtc.util.AsyncHttpURLConnection;
-import org.appspot.apprtc.util.AsyncHttpURLConnection.AsyncHttpEvents;
-
-import android.os.Handler;
 import android.util.Log;
 
 import com.neovisionaries.ws.client.WebSocket;
@@ -27,8 +23,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -85,7 +79,7 @@ public class WebSocketChannelClient {
         this.events = events;
         this.roomID = roomID;
         clientID = null;
-        wsSendQueue = new LinkedList<String>();
+        wsSendQueue = new LinkedList<>();
         state = WebSocketConnectionState.NEW;
     }
 
@@ -179,7 +173,6 @@ public class WebSocketChannelClient {
                 Log.e(TAG, "WebSocket send() in error or closed state : " + message);
                 return;
             case REGISTERED:
-                JSONObject json = new JSONObject();
                 Log.d(TAG, "C->WSS: " + message);
                 ws.sendText(message);
                 break;
@@ -192,6 +185,7 @@ public class WebSocketChannelClient {
         if (state == WebSocketConnectionState.REGISTERED) {
             // Send "bye" to WebSocket server.
 //            send("{\"type\": \"bye\"}");
+            ws.disconnect();
             state = WebSocketConnectionState.CONNECTED;
         }
         // Close WebSocket in ERROR state only.
@@ -250,6 +244,7 @@ public class WebSocketChannelClient {
                 public void run() {
                     if (state == WebSocketConnectionState.CONNECTED
                             || state == WebSocketConnectionState.REGISTERED) {
+
                         events.onWebSocketMessage(message);
                     }
                 }
@@ -266,13 +261,6 @@ public class WebSocketChannelClient {
                 public void run() {
                     state = WebSocketConnectionState.CONNECTED;
                     RTCConnection.online = true;
-                    // Check if we have pending register request.
-                    if (state != WebSocketConnectionState.REGISTERED) {
-//                        if (roomID != null && clientID != null) {
-//                        if (roomID != null) {
-//                            register(roomID, clientID);
-//                        }
-                    }
                 }
             });
         }

@@ -508,7 +508,7 @@ public class PeerConnectionClient {
     Log.d(TAG, "Create peer connection.");
 
     Log.d(TAG, "PCConstraints: " + pcConstraints.toString());
-    queuedRemoteCandidates = new LinkedList<IceCandidate>();
+    queuedRemoteCandidates = new LinkedList<>();
 
     if (videoCallEnabled) {
       Log.d(TAG, "EGLContext: " + renderEGLContext);
@@ -620,11 +620,8 @@ public class PeerConnectionClient {
   }
 
   public boolean isHDVideo() {
-    if (!videoCallEnabled) {
-      return false;
-    }
+      return videoCallEnabled && videoWidth * videoHeight >= 1280 * 720;
 
-    return videoWidth * videoHeight >= 1280 * 720;
   }
 
   private void getStats() {
@@ -784,7 +781,7 @@ public class PeerConnectionClient {
           Log.d(TAG, "Stop video source.");
           try {
             videoCapturer.stopCapture();
-          } catch (InterruptedException e) {
+          } catch (InterruptedException ignored) {
           }
           videoCapturerStopped = true;
         }
@@ -1009,7 +1006,7 @@ public class PeerConnectionClient {
 
   private void switchCameraInternal() {
     if (videoCapturer instanceof CameraVideoCapturer) {
-      if (!videoCallEnabled || isError || videoCapturer == null) {
+      if (!videoCallEnabled || isError) {
         Log.e(TAG, "Failed to switch camera. Video: " + videoCallEnabled + ". Error : " + isError);
         return; // No video is sent or only one camera is available or error happened.
       }
